@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, MessageCircle, X } from 'lucide-react';
 import { api } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Chatbot = () => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -27,17 +29,27 @@ const Chatbot = () => {
     setLoading(true);
 
     try {
-      const response = await api.chat(inputMessage, sessionId.current);
+      // Pass userId for attendance context
+      const response = await api.chat(inputMessage, sessionId.current, user?.id);
 
-      const botMessage = { 
-        text: response.data.response, 
-        sender: 'bot', 
-        timestamp: new Date() 
+      const botMessage = {
+        text: response.data.response,
+        sender: 'bot',
+        timestamp: new Date()
       };
       setMessages(prev => [...prev, botMessage]);
     } catch (error) {
-      const errorMessage = { 
-        text: "Sorry, I'm having trouble responding right now. Please try again later.", 
+      console.error('Chat error:', error);
+
+      // Try to get response from error if backend sent one
+      let errorText = "Sorry, I'm having trouble responding right now. Please try again later.";
+
+      if (error.response?.data?.response) {
+        errorText = error.response.data.response;
+      }
+
+      const errorMessage = {
+        text: errorText,
         sender: 'bot',
         timestamp: new Date()
       };
@@ -47,7 +59,7 @@ const Chatbot = () => {
     setLoading(false);
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -92,7 +104,8 @@ const Chatbot = () => {
             {messages.length === 0 ? (
               <div className="text-center text-gray-500 mt-8">
                 <Bot className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-                <p>Ask me about syllabus, notes, timetable, or previous year questions!</p>
+                <p className="text-sm px-2">Ask me about syllabus, notes, timetable, PYQs, or your attendance!</p>
+                <p className="text-xs mt-2 text-gray-400">I can search through uploaded materials to answer your questions.</p>
               </div>
             ) : (
               messages.map((message, index) => (
@@ -138,7 +151,7 @@ const Chatbot = () => {
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 placeholder="Type your question..."
                 className="flex-1 p-2 border rounded-lg focus:outline-none focus:border-blue-500"
                 disabled={loading}

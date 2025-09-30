@@ -83,5 +83,5 @@ export const api = {
   get: (url, config) => materialsAPI.get(url, config),
   
   // Chatbot
-  chat: (message, sessionId) => materialsAPI.post('/chatbot/chat', { message, sessionId }),
+  chat: (message, sessionId, userId) => materialsAPI.post('/chatbot/chat', { message, sessionId, userId }),
 };
